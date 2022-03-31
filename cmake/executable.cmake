@@ -1,0 +1,1 @@
+add_executable(planner_node src/planner/planner.cpp)
