@@ -1,3 +1,6 @@
 [submodule "deps/relearn"]
 	path = deps/relearn
 	url = git@gitlab.ical.tw:a1085125/relearn.git
+[submodule "deps/conio"]
+	path = deps/conio
+	url = git@gitlab.ical.tw:jamesljlster/conio.git
