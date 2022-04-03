@@ -16,7 +16,6 @@ find_package(OpenCV REQUIRED)
 
 
 set(DEPS_PATH
-    #${CMAKE_CURRENT_SOURCE_DIR}/deps/pid
     #${CMAKE_CURRENT_SOURCE_DIR}/deps/conio/src
     )
 
@@ -62,7 +61,9 @@ set(LIB_PATHS
 ## Generate messages in the 'msg' folder
 add_message_files(
     FILES
-    test.msg
+    action.msg
+    reward.msg
+    state.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -104,12 +105,11 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${DEPS_PATH}
     ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/relearn/src
 )
 
 ## Declare a C++ library
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/deps.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/lib.cmake)
-
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/executable.cmake)
-
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/link.cmake)

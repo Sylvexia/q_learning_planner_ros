@@ -1,14 +1,20 @@
-#include "planner/planner.hpp" 
+#include "planner/planner.hpp"
 
-int main(int argc,char **argv)
+int main(int argc, char **argv)
 {
-    ros::init(argc,argv,"test");
+    ros::init(argc, argv, "rl_planner");
     ros::NodeHandle nh;
+    ros::Rate loop_rate(10);
 
     Planner planner;
-    while(ros::ok())
+
+    planner.create();
+
+    while (ros::ok())
     {
-        planner.print("holy shit if this worked");
+        planner.execute();
+        ros::spinOnce();
+        loop_rate.sleep();
     }
     return 0;
 }
