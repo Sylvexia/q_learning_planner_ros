@@ -2,6 +2,7 @@
 
 #include "ros/ros.h"
 #include "relearn.hpp"
+#include "conio.h"
 #include "reinforcement_learning_planner/action.h"
 #include "reinforcement_learning_planner/state.h"
 #include "reinforcement_learning_planner/reward.h"
@@ -65,8 +66,9 @@ public:
     Planner(ros::NodeHandle &nh);
     ~Planner();
 
-    void create();
+    void init();
     void execute();
+    void save();
 
     void plan_q_learning();
 
