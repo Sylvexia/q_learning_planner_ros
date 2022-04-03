@@ -1,3 +1,0 @@
-[submodule "deps/relearn"]
-	path = deps/relearn
-	url = https://github.com/alexge233/relearn.git
