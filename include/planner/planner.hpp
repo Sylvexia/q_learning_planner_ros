@@ -67,7 +67,9 @@ public:
     ~Planner();
 
     void init();
+    void start();
     void execute();
+    void suspend();
     void save();
 
     void plan_q_learning();
@@ -79,9 +81,9 @@ public:
     void get_reward();
     void set_action();
 
-private:
-    std::mt19937 m_rand_gen;
+    void action_log();
 
+private:
     ros::NodeHandle m_nh;
     ros::Subscriber m_sub_state;
     ros::Subscriber m_sub_reward;
@@ -91,10 +93,16 @@ private:
     reinforcement_learning_planner::reward m_reward_msg;
     reinforcement_learning_planner::action m_action_msg;
 
+    bool m_resume = false;
+    bool m_suspend = false;
+    bool m_exit = false;
+
     using c_state = relearn::state<semantic_line_state>;
     using c_action = relearn::action<driving_action>;
 
     relearn::state<c_state> m_state = {{{0, 0}}};
     relearn::action<c_action> m_action = {{{0, 0, 0}}};
     relearn::policy<c_state, c_action> m_policy;
+
+    std::mt19937 m_rand_gen;
 };
