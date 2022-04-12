@@ -1,4 +1,4 @@
-#include "planner/planner.hpp"
+#include "online_training/online_training.hpp"
 
 int main(int argc, char **argv)
 {
@@ -6,9 +6,9 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
     ros::Rate loop_rate(1);
 
-    Planner planner(nh);
+    OnlineTraining online_training(nh);
 
-    planner.start();
+    online_training.start();
 
     return 0;
 }
