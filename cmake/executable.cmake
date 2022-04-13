@@ -1,1 +1,1 @@
-add_executable(planner_node src/planner/planner.cpp)
+add_executable(online_training_node src/online_training/online_training.cpp)

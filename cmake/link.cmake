@@ -8,7 +8,7 @@ rl_handler_lib
 ${catkin_LIBRARIES}
 )
 
-target_link_libraries(planner_node
+target_link_libraries(online_training_node
 conio
 online_training_lib
 )
