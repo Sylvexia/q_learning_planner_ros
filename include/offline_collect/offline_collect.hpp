@@ -7,16 +7,16 @@
 #include "reinforcement_learning_planner/state.h"
 #include "reinforcement_learning_planner/reward.h"
 
-class OfflineCollect : Planner
+class OfflineCollect
 {
 public:
     OfflineCollect();
     OfflineCollect(ros::NodeHandle &nh);
     ~OfflineCollect();
 
-    void init() override;  //initialize the planner
-    void start() override; //start the planner
-    void plan() override;  //plan offline collect
+    void init();  //initialize the planner
+    void start(); //start the planner
+    void plan();  //plan offline collect
 
     void state_callback(const reinforcement_learning_planner::state::ConstPtr &msg);
     void reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg);

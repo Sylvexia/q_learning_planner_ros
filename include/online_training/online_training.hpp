@@ -13,18 +13,75 @@
 #include "planner/planner.hpp"
 #include "rl_handler/rl_handler.hpp"
 
-class OnlineTraining : Planner
+class OnlineTraining;
+
+class PlannerState
+{
+protected:
+    OnlineTraining *m_online_training;
+
+public:
+    virtual ~PlannerState();
+
+    void set_context(OnlineTraining *online_training);
+
+    virtual void init() = 0;
+    virtual void execute() = 0;
+    virtual void pause() = 0;
+    virtual void terminate() = 0;
+};
+
+class Initialization : public PlannerState
+{
+public:
+    void init() override;
+    void execute() override;
+    void pause() override;
+    void terminate() override;
+};
+
+class Suspending : public PlannerState
+{
+public:
+    void init() override;
+    void execute() override;
+    void pause() override;
+    void terminate() override;
+};
+
+class Executing : public PlannerState
+{
+public:
+    void init() override;
+    void execute() override;
+    void pause() override;
+    void terminate() override;
+};
+
+class Terminating : public PlannerState
+{
+public:
+    void init() override;
+    void execute() override;
+    void pause() override;
+    void terminate() override;
+};
+
+class OnlineTraining
 {
 public:
     OnlineTraining();
     OnlineTraining(ros::NodeHandle &nh);
+    OnlineTraining(ros::NodeHandle &nh, PlannerState *state);
     ~OnlineTraining();
 
-    void init() override;    //initialize the planner
-    void start() override;   //start the planner
-    void plan() override;    //plan online training
-    void suspend();          //suspend the planner
-    void save();             //save the model
+    void transition_to(PlannerState *state);
+
+    void init();    //initialize the planner
+    void start();   //start the planner
+    void plan();    //plan online training
+    void suspend(); //suspend the planner
+    void save();    //save the model
 
     void state_callback(const reinforcement_learning_planner::state::ConstPtr &msg);
     void reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg);
@@ -52,4 +109,5 @@ private:
     bool m_exit = false;
 
     RL_handler m_rl_handler;
+    PlannerState *m_planner_state;
 };
