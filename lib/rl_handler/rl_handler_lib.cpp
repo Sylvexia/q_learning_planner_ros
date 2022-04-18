@@ -20,7 +20,7 @@ void RL_handler::generate_rand()
 void RL_handler::get_action() //epsilon greedy
 {
     std::uniform_real_distribution<double> rand_num(0.0, 1.0);
-    if (rand_num(m_rand_gen) < epsilon)
+    if (rand_num(m_rand_gen) < m_epsilon)
     {
         rand_action();
     }

@@ -83,16 +83,11 @@ public:
     void suspend(); //suspend the planner
     void save();    //save the model
 
-    void state_callback(const reinforcement_learning_planner::state::ConstPtr &msg);
-    void reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg);
-
     void get_state();
     void get_reward();
     void set_action();
 
     void update_state();
-
-    void action_log();
 
 private:
     ros::NodeHandle m_nh;
@@ -104,10 +99,18 @@ private:
     reinforcement_learning_planner::reward m_reward_msg;
     reinforcement_learning_planner::action m_action_msg;
 
+    void state_callback(const reinforcement_learning_planner::state::ConstPtr &msg);
+    void reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg);
+
     bool m_resume = false;
     bool m_suspend = false;
     bool m_exit = false;
 
-    RL_handler m_rl_handler;
     PlannerState *m_planner_state;
+    RL_handler m_rl_handler;
+
+    friend class Initialization;
+    friend class Suspending;
+    friend class Executing;
+    friend class Terminating;
 };

@@ -69,8 +69,13 @@ public:
     relearn::action<rl_action> action = {{{0, 0, 0}}};
     relearn::policy<rl_state, rl_action> policy;
 
-    void generate_rand();
+    std::deque<relearn::link<rl_state, rl_action>> episode;
+
     void generate_model();
+    void generate_rand();
+
+    void load_model();
+    void save_model();
 
     void set_parameter();
     void get_action();
@@ -83,9 +88,9 @@ public:
 private:
     std::mt19937 m_rand_gen;
 
-    double learning_rate;
-    double discount_factor;
-    double epsilon;
+    double m_learning_rate;
+    double m_discount_factor;
+    double m_epsilon;
 
     model m_env;
 };

@@ -15,6 +15,7 @@ void Initialization::init()
 {
     ROS_INFO("Initialization");
     ROS_INFO("Loading the model");
+    m_online_training->m_rl_handler.load_model();
     ROS_INFO("Suspending state");
     m_online_training->transition_to(new Suspending);
 }
@@ -141,8 +142,6 @@ void OnlineTraining::transition_to(PlannerState *state)
     m_planner_state->set_context(this);
 }
 
-
-
 void OnlineTraining::init()
 {
     m_resume = false;
@@ -230,7 +229,7 @@ void OnlineTraining::save()
 void OnlineTraining::plan()
 {
     ROS_INFO("plan_q_learning");
-    //m_rl_handler.get_action();
+    m_rl_handler.get_action();
     set_action();
     ros::spinOnce();
     get_reward();
