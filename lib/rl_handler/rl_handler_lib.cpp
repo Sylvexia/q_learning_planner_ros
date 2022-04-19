@@ -2,18 +2,17 @@
 
 RL_handler::RL_handler()
     : m_rand_gen(),
-      m_learning_rate(0.1),
-      m_discount_factor(0.9),
+      m_learning_rate(0.9),
+      m_discount_factor(0.1),
       m_epsilon(0.1),
-      m_state{7,0,0},
-      m_action{5,3,0,0,0},
+      m_state{7, 0, 0},
+      m_action{5, 3, 0, 0, 0},
       m_env(),
-      state(0,m_state),
+      state(0, m_state),
       action{m_action},
       policy(),
       episode()
 {
-
     ROS_INFO("RL_handler constructed");
 }
 
@@ -42,14 +41,10 @@ void RL_handler::save_model()
 void RL_handler::get_action() //epsilon greedy
 {
     std::uniform_real_distribution<double> rand_num(0.0, 1.0);
-    if (rand_num(m_rand_gen) < m_epsilon)
-    {
-        rand_action();
-    }
-    else
-    {
+    if (rand_num(m_rand_gen) > m_epsilon)
         best_action(); //selected from the policy
-    }
+    else
+        rand_action();
 }
 
 void RL_handler::rand_action()
@@ -60,6 +55,10 @@ void RL_handler::rand_action()
 
 void RL_handler::best_action()
 {
-    std::cout << "best_action"
-              << "\n";
+    ROS_INFO("Best action");
+}
+
+void RL_handler::learn()
+{
+    ROS_INFO("Learning");
 }
