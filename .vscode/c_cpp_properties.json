@@ -1,0 +1,19 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/sylvex/wheel_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/sylvex/wheel_ws/src/reinforcement_learning_planner/include/**",
+        "/home/sylvex/wheel_ws/src/reinforcement_learning_planner/deps/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}

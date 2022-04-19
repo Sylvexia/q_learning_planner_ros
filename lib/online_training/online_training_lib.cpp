@@ -1,201 +1,79 @@
 #include "online_training/online_training.hpp"
 
-void PlannerState::set_context(OnlineTraining *online_training)
-{
-    m_online_training = online_training;
-}
-
-PlannerState::~PlannerState()
-{
-    ROS_INFO("PlannerState destructed");
-};
-
-
-void Initialization::init()
-{
-    ROS_INFO("Initialization");
-    ROS_INFO("Loading the model");
-    m_online_training->m_rl_handler.load_model();
-    ROS_INFO("Suspending state");
-    m_online_training->transition_to(new Suspending);
-}
-
-void Initialization::execute()
-{
-    ROS_INFO("Initialization haven't completed yet");
-}
-
-void Initialization::pause()
-{
-    ROS_INFO("Initialization haven't completed yet");
-}
-
-void Initialization::terminate()
-{
-    ROS_INFO("Force stop");
-}
-
-void Suspending::init()
-{
-    ROS_INFO("reload model");
-}
-
-void Suspending::execute()
-{
-    ROS_INFO("Starting the plan");
-}
-
-void Suspending::pause()
-{
-    ROS_INFO("What are you pausing for?");
-}
-
-void Suspending::terminate()
-{
-    ROS_INFO("Terminating");
-}
-
-void Executing::init()
-{
-    ROS_INFO("reload model without saving");
-}
-
-void Executing::execute()
-{
-    ROS_INFO("What are you executing when the robot is running?");
-}
-
-void Executing::pause()
-{
-    ROS_INFO("Epoch is completed, saving model, and waiting for the next epoch");
-}
-
-void Executing::terminate()
-{
-    ROS_INFO("Red alert, the whold world is fucked");
-}
-
-void Terminating::init()
-{
-    ROS_INFO("Are you try to restart the world, father Pucci?");
-}
-
-void Terminating::execute()
-{
-    ROS_INFO("No, You can't");
-}
-
-void Terminating::pause()
-{
-    ROS_INFO("The world is fucked, you can't pause");
-}
-
-void Terminating::terminate()
-{
-    ROS_INFO("KEK LUL");
-}
-
 OnlineTraining::OnlineTraining()
 {
     ROS_INFO("Default class OnlineTraining has been constructed");
 }
 
 OnlineTraining::OnlineTraining(ros::NodeHandle &nh)
-    : m_nh(nh), m_planner_state(nullptr)
+    : m_nh(nh),
+      m_sub_state(nh.subscribe("/state", 1, &OnlineTraining::state_callback, this)),
+      m_sub_reward(nh.subscribe("/reward", 1, &OnlineTraining::reward_callback, this)),
+      m_pub_action(nh.advertise<reinforcement_learning_planner::action>("/action", 1)),
+      m_planner_state(PlannerState::INIT),
+      m_exit(false)
 {
     ROS_INFO("Class OnlineTraining has been constructed");
-
-    m_sub_state = m_nh.subscribe("/state", 1, &OnlineTraining::state_callback, this);
-    m_sub_reward = m_nh.subscribe("/reward", 1, &OnlineTraining::reward_callback, this);
-
-    m_pub_action = m_nh.advertise<reinforcement_learning_planner::action>("/action", 1);
-
-    transition_to(new Initialization);
-}
-
-OnlineTraining::OnlineTraining(ros::NodeHandle &nh, PlannerState *state)
-    : m_nh(nh), m_planner_state(nullptr)
-{
-    ROS_INFO("Class OnlineTraining has been constructed with assigned state");
-
-    m_sub_state = m_nh.subscribe("/state", 1, &OnlineTraining::state_callback, this);
-    m_sub_reward = m_nh.subscribe("/reward", 1, &OnlineTraining::reward_callback, this);
-
-    m_pub_action = m_nh.advertise<reinforcement_learning_planner::action>("/action", 1);
-
-    transition_to(state);    
 }
 
 OnlineTraining::~OnlineTraining()
 {
     ROS_INFO("Class OnlineTraining has been destroyed");
-    delete m_planner_state;
-}
-
-void OnlineTraining::transition_to(PlannerState *state)
-{
-    if(m_planner_state != nullptr)
-    {
-        delete m_planner_state;
-    }
-    m_planner_state = state;
-    m_planner_state->set_context(this);
 }
 
 void OnlineTraining::init()
 {
-    m_resume = false;
-    m_suspend = false;
-    m_exit = false;
+    m_rl_handler.load_model();
+    m_rl_handler.generate_rand();
+    //m_rl_handler.episode.clear();
+    m_planner_state = PlannerState::SUSPEND;
 }
 
 void OnlineTraining::start()
 {
-    ros::Rate loop_rate(1);
-
     while (!m_exit)
     {
-        init();
-
-        while (!m_resume && !m_exit)
+        switch (m_planner_state)
         {
-            ros::spinOnce();
-            plan();
 
-            loop_rate.sleep();
-
-            if (kbhit())
-            {
-                switch (tolower(getch()))
-                {
-                case 's':
-                {
-                    save();
-                    suspend();
-                    break;
-                }
-                case 27: // ESC
-                {
-                    m_exit = true;
-                    save();
-                    break;
-                }
-                default:
-                    break;
-                }
-            }
+        case PlannerState::INIT:
+        {
+            init();
+            break;
+        }
+        case PlannerState::SUSPEND:
+        {
+            suspend();
+            break;
+        }
+        case PlannerState::EXECUTING:
+        {
+            execute();
+            break;
+        }
+        case PlannerState::TERMINATED:
+        {
+            m_exit = true;
+            break;
+        }
+        default:
+        {
+            ROS_INFO("Why are you here?");
+            break;
+        }
         }
     }
 }
 
 void OnlineTraining::suspend()
 {
-    ros::Rate loop_rate(2);
-    m_suspend = true;
-    while (m_suspend)
+    ros::Rate suspend_rate(2);
+
+    while (true)
     {
-        ROS_INFO("Suspending, press S to resume");
-        loop_rate.sleep();
+        ROS_INFO("Suspending, press s to save, press e to execute, press ESC to exit");
+        suspend_rate.sleep();
+        bool is_suspend = true;
 
         if (kbhit())
         {
@@ -203,22 +81,71 @@ void OnlineTraining::suspend()
             {
             case 's':
             {
-                m_suspend = false;
-                m_resume = true;
-                ROS_INFO("Resume");
+                save();
+                ROS_INFO("Saved model");
+                is_suspend = false;
+                break;
+            }
+            case 'e':
+            {
+                ROS_INFO("Execute");
+                m_planner_state = PlannerState::EXECUTING;
+                is_suspend = false;
                 break;
             }
             case 27: // ESC
             {
-                m_exit = true;
-                m_suspend = false;
+                m_planner_state = PlannerState::TERMINATED;
+                is_suspend = false;
                 break;
             }
-            default:
-                break;
             }
         }
+
+        if (!is_suspend)
+            break;
     }
+}
+
+void OnlineTraining::execute()
+{
+    ros::Rate execute_rate(2);
+    while (true)
+    {
+        ros::spinOnce();
+        plan();
+        execute_rate.sleep();
+        bool is_executing = true;
+
+        if (kbhit())
+        {
+            switch (tolower(getch()))
+            {
+            case 's':
+            {
+                save();
+                stop_wheel();
+                m_planner_state = PlannerState::SUSPEND;
+                is_executing = false;
+                break;
+            }
+            case 27: // ESC
+            {
+                m_planner_state = PlannerState::TERMINATED;
+                is_executing = false;
+                break;
+            }
+            }
+        }
+        if (!is_executing)  break;
+    }
+}
+
+void OnlineTraining::stop_wheel()
+{
+    m_action_msg.linear_action = 0;
+    m_action_msg.angular_action = 0;
+    m_pub_action.publish(m_action_msg);
 }
 
 void OnlineTraining::save()
@@ -237,7 +164,6 @@ void OnlineTraining::plan()
 
     //m_rl_handler.learn();
     update_state();
-
 }
 
 void OnlineTraining::state_callback(const reinforcement_learning_planner::state::ConstPtr &msg)
@@ -252,7 +178,9 @@ void OnlineTraining::reward_callback(const reinforcement_learning_planner::rewar
 
 void OnlineTraining::get_state()
 {
+    using rl_state = relearn::state<semantic_line_state>;
     ROS_INFO("Getting state");
+    m_rl_handler.state = rl_state(m_reward_msg.offset, {7, m_state_msg.offset, m_state_msg.special_case});
 }
 
 void OnlineTraining::get_reward()

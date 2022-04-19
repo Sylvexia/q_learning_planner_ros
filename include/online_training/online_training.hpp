@@ -13,58 +13,12 @@
 #include "planner/planner.hpp"
 #include "rl_handler/rl_handler.hpp"
 
-class OnlineTraining;
-
-class PlannerState
+enum class PlannerState
 {
-protected:
-    OnlineTraining *m_online_training;
-
-public:
-    virtual ~PlannerState();
-
-    void set_context(OnlineTraining *online_training);
-
-    virtual void init() = 0;
-    virtual void execute() = 0;
-    virtual void pause() = 0;
-    virtual void terminate() = 0;
-};
-
-class Initialization : public PlannerState
-{
-public:
-    void init() override;
-    void execute() override;
-    void pause() override;
-    void terminate() override;
-};
-
-class Suspending : public PlannerState
-{
-public:
-    void init() override;
-    void execute() override;
-    void pause() override;
-    void terminate() override;
-};
-
-class Executing : public PlannerState
-{
-public:
-    void init() override;
-    void execute() override;
-    void pause() override;
-    void terminate() override;
-};
-
-class Terminating : public PlannerState
-{
-public:
-    void init() override;
-    void execute() override;
-    void pause() override;
-    void terminate() override;
+    INIT,
+    SUSPEND,
+    EXECUTING,
+    TERMINATED
 };
 
 class OnlineTraining
@@ -72,16 +26,15 @@ class OnlineTraining
 public:
     OnlineTraining();
     OnlineTraining(ros::NodeHandle &nh);
-    OnlineTraining(ros::NodeHandle &nh, PlannerState *state);
     ~OnlineTraining();
-
-    void transition_to(PlannerState *state);
 
     void init();    //initialize the planner
     void start();   //start the planner
     void plan();    //plan online training
     void suspend(); //suspend the planner
-    void save();    //save the model
+    void execute();
+    void stop_wheel();
+    void save(); //save the model
 
     void get_state();
     void get_reward();
@@ -99,18 +52,11 @@ private:
     reinforcement_learning_planner::reward m_reward_msg;
     reinforcement_learning_planner::action m_action_msg;
 
+    RL_handler m_rl_handler;
+    PlannerState m_planner_state;
+
     void state_callback(const reinforcement_learning_planner::state::ConstPtr &msg);
     void reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg);
 
-    bool m_resume = false;
-    bool m_suspend = false;
-    bool m_exit = false;
-
-    PlannerState *m_planner_state;
-    RL_handler m_rl_handler;
-
-    friend class Initialization;
-    friend class Suspending;
-    friend class Executing;
-    friend class Terminating;
+    bool m_exit;
 };
