@@ -5,13 +5,14 @@ RL_handler::RL_handler()
       m_learning_rate(0.9),
       m_discount_factor(0.1),
       m_epsilon(0.1),
-      m_state{7, 0, 0},
-      m_action{5, 3, 0, 0, 0},
-      m_env(),
+      m_state{0, 0, 13},
+      m_action{0, 0, 0, 5, 3},
       state(0, m_state),
+      state_next(0, m_state),
       action{m_action},
       policy(),
-      episode()
+      episode(),
+      learner{m_learning_rate, m_discount_factor}
 {
     ROS_INFO("RL_handler constructed");
 }
@@ -21,7 +22,7 @@ RL_handler::~RL_handler()
     ROS_INFO("RL_handler destructed");
 }
 
-void RL_handler::generate_rand()
+void RL_handler::init_rand_generator()
 {
     m_rand_gen = std::mt19937(static_cast<std::size_t>(std::chrono::high_resolution_clock::now()
                                                            .time_since_epoch()
@@ -49,16 +50,30 @@ void RL_handler::get_action() //epsilon greedy
 
 void RL_handler::rand_action()
 {
-    std::uniform_int_distribution<unsigned int> angular(0, 5);
-    std::uniform_int_distribution<unsigned int> linear(0, 3);
+    std::uniform_int_distribution<int8_t> angular_gen(-2, 2);
+    std::uniform_int_distribution<int8_t> linear_gen(0, 3);
+
+    auto angular = angular_gen(m_rand_gen);
+    auto linear = linear_gen(m_rand_gen);
+
+    action = rl_action(driving_action{angular, linear});
 }
 
 void RL_handler::best_action()
 {
-    ROS_INFO("Best action");
+    auto action_ptr = policy.best_action(state);
+
+    action = *(action_ptr);
+}
+
+void RL_handler::update_state()
+{
+    ROS_INFO("Update state");
+    state_next = state;
 }
 
 void RL_handler::learn()
 {
     ROS_INFO("Learning");
+    learner(state, action, state_next, policy, false);
 }

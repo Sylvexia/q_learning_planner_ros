@@ -12,23 +12,36 @@
 
 struct semantic_line_state
 {
-    uint8_t state_size;
-
     int8_t offset_discretization;
     uint8_t special_case;
+
+    uint8_t state_size;
+
+    bool operator==(const semantic_line_state &arg) const
+    {
+        return (this->offset_discretization == arg.offset_discretization) &&
+               (this->special_case == arg.special_case);
+    }
 };
 
 struct driving_action
 {
-    uint8_t angular_size;
-    uint8_t linear_size;
-
     int8_t angular_discretization;
     int8_t linear_discretization;
     bool revert;
+
+    uint8_t angular_size;
+    uint8_t linear_size;
+
+    bool operator==(const driving_action &arg) const
+    {
+        return (this->angular_discretization == arg.angular_discretization) &&
+               (this->linear_discretization == arg.linear_discretization);
+    }
 };
 
 //You should hash_combine first, then you could interate the member of the struct
+//also, operator== should be defined before hash_code, to know if two structs are equal
 
 namespace std
 {
@@ -55,11 +68,6 @@ namespace std
     };
 }
 
-struct environment
-{
-    std::unordered_set<semantic_line_state> line_platform;
-};
-
 class RL_handler
 {
 private:
@@ -71,7 +79,6 @@ private:
 
     semantic_line_state m_state;
     driving_action m_action;
-    environment m_env;
 
 public:
     RL_handler();
@@ -81,14 +88,15 @@ public:
     using rl_action = relearn::action<driving_action>;
 
     rl_state state;
+    rl_state state_next;
     rl_action action;
     relearn::policy<rl_state, rl_action> policy;
-
     std::deque<relearn::link<rl_state, rl_action>> episode;
+    relearn::q_learning<rl_state, rl_action> learner;
 
     void set_parameter();
 
-    void generate_rand();
+    void init_rand_generator();
 
     void load_model();
     void save_model();
@@ -97,6 +105,8 @@ public:
 
     void rand_action();
     void best_action();
+
+    void update_state();
 
     void learn();
 };

@@ -13,14 +13,6 @@
 #include "planner/planner.hpp"
 #include "rl_handler/rl_handler.hpp"
 
-enum class PlannerState
-{
-    INIT,
-    SUSPEND,
-    EXECUTING,
-    TERMINATED
-};
-
 class OnlineTraining
 {
 public:
@@ -30,17 +22,16 @@ public:
 
     void init();    //initialize the planner
     void start();   //start the planner
-    void plan();    //plan online training
     void suspend(); //suspend the planner
     void execute();
+
     void stop_wheel();
     void save(); //save the model
 
-    void get_state();
-    void get_reward();
-    void set_action();
+    void plan();    //plan online training
 
-    void update_state();
+    void get_state_reward();
+    void set_action();
 
 private:
     ros::NodeHandle m_nh;

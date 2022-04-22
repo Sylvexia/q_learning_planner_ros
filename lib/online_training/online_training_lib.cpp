@@ -24,8 +24,10 @@ OnlineTraining::~OnlineTraining()
 void OnlineTraining::init()
 {
     m_rl_handler.load_model();
-    m_rl_handler.generate_rand();
-    //m_rl_handler.episode.clear();
+    m_rl_handler.init_rand_generator();
+    m_rl_handler.episode.clear();
+    m_rl_handler.policy.clear();
+
     m_planner_state = PlannerState::SUSPEND;
 }
 
@@ -137,7 +139,8 @@ void OnlineTraining::execute()
             }
             }
         }
-        if (!is_executing)  break;
+        if (!is_executing)
+            break;
     }
 }
 
@@ -159,42 +162,36 @@ void OnlineTraining::plan()
     m_rl_handler.get_action();
     set_action();
     ros::spinOnce();
-    get_reward();
-    get_state();
+    get_state_reward();
 
-    //m_rl_handler.learn();
-    update_state();
+    m_rl_handler.learn();
+    m_rl_handler.update_state();
 }
 
 void OnlineTraining::state_callback(const reinforcement_learning_planner::state::ConstPtr &msg)
 {
-    ROS_INFO("State callback");
+    ROS_INFO("State offset: %d", msg->offset);
+    ROS_INFO("State velocity: %d", msg->special_case);
 }
 
 void OnlineTraining::reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg)
 {
-    ROS_INFO("Reward callback");
+    ROS_INFO("Reward offset: %d", msg->offset);
 }
 
-void OnlineTraining::get_state()
+void OnlineTraining::get_state_reward()
 {
     using rl_state = relearn::state<semantic_line_state>;
     ROS_INFO("Getting state");
-    m_rl_handler.state = rl_state(m_reward_msg.offset, {7, m_state_msg.offset, m_state_msg.special_case});
-}
-
-void OnlineTraining::get_reward()
-{
-    ROS_INFO("Getting reward");
+    m_rl_handler.state_next = rl_state(m_reward_msg.offset, {m_state_msg.offset, m_state_msg.special_case});
 }
 
 void OnlineTraining::set_action()
 {
+    m_action_msg.linear_action = m_rl_handler.action.trait().linear_discretization;
+    m_action_msg.angular_action = m_rl_handler.action.trait().angular_discretization;
+    m_action_msg.revert = false;
+
     m_pub_action.publish(m_action_msg);
     ROS_INFO("Setting action:%d", m_action_msg.linear_action);
-}
-
-void OnlineTraining::update_state()
-{
-    ROS_INFO("Updating state");
 }
