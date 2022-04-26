@@ -12,3 +12,7 @@ target_link_libraries(online_training_node
 conio
 online_training_lib
 )
+
+target_link_libraries(test_model_node
+online_training_lib
+)
