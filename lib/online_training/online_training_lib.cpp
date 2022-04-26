@@ -23,12 +23,8 @@ OnlineTraining::~OnlineTraining()
 
 void OnlineTraining::init()
 {
-    m_rl_handler.load_model();
-    m_rl_handler.init_rand_generator();
-    m_rl_handler.episode.clear();
-    m_rl_handler.policy.clear();
-
-    m_planner_state = PlannerState::SUSPEND;
+    m_rl_handler.load_model(m_rl_handler.get_recent_filename());
+    m_rl_handler.init();
 }
 
 void OnlineTraining::start()
@@ -41,6 +37,7 @@ void OnlineTraining::start()
         case PlannerState::INIT:
         {
             init();
+            m_planner_state = PlannerState::SUSPEND;
             break;
         }
         case PlannerState::SUSPEND:
@@ -83,8 +80,9 @@ void OnlineTraining::suspend()
             {
             case 's':
             {
-                save();
-                ROS_INFO("Saved model");
+                m_rl_handler.save_model(m_rl_handler.get_filename_by_cur_time());
+                init();
+                ROS_INFO("Saved model, reinitialized");
                 is_suspend = false;
                 break;
             }
@@ -125,7 +123,6 @@ void OnlineTraining::execute()
             {
             case 's':
             {
-                save();
                 stop_wheel();
                 m_planner_state = PlannerState::SUSPEND;
                 is_executing = false;
@@ -149,11 +146,6 @@ void OnlineTraining::stop_wheel()
     m_action_msg.linear_action = 0;
     m_action_msg.angular_action = 0;
     m_pub_action.publish(m_action_msg);
-}
-
-void OnlineTraining::save()
-{
-    ROS_INFO("Saving model");
 }
 
 void OnlineTraining::plan()
@@ -193,5 +185,5 @@ void OnlineTraining::set_action()
     m_action_msg.revert = false;
 
     m_pub_action.publish(m_action_msg);
-    ROS_INFO("Setting action:%d", m_action_msg.linear_action);
+    ROS_INFO("Setting action:%d, %d", m_action_msg.linear_action, m_action_msg.angular_action);
 }

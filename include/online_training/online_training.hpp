@@ -26,15 +26,15 @@ public:
     void execute();
 
     void stop_wheel();
-    void save(); //save the model
 
-    void plan();    //plan online training
+    void plan(); //plan online training
 
     void get_state_reward();
     void set_action();
 
 private:
     ros::NodeHandle m_nh;
+    
     ros::Subscriber m_sub_state;
     ros::Subscriber m_sub_reward;
     ros::Publisher m_pub_action;

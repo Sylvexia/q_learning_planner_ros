@@ -9,6 +9,10 @@
 #include <chrono>
 #include <ctime>
 #include <random>
+#include <fstream>
+#include <string>
+#include <filesystem>
+#include <regex>
 
 struct semantic_line_state
 {
@@ -19,8 +23,7 @@ struct semantic_line_state
 
     bool operator==(const semantic_line_state &arg) const
     {
-        return (this->offset_discretization == arg.offset_discretization) &&
-               (this->special_case == arg.special_case);
+        return (this->offset_discretization == arg.offset_discretization);
     }
 };
 
@@ -80,6 +83,8 @@ private:
     semantic_line_state m_state;
     driving_action m_action;
 
+    const std::filesystem::path m_model_folder; //folder preset path: rl_model/online
+
 public:
     RL_handler();
     ~RL_handler();
@@ -90,16 +95,20 @@ public:
     rl_state state;
     rl_state state_next;
     rl_action action;
+    
     relearn::policy<rl_state, rl_action> policy;
     std::deque<relearn::link<rl_state, rl_action>> episode;
     relearn::q_learning<rl_state, rl_action> learner;
 
     void set_parameter();
 
+    void init();
     void init_rand_generator();
 
-    void load_model();
-    void save_model();
+    void load_model(const std::string &filename);
+    void save_model(const std::string &filename);
+    std::string get_filename_by_cur_time();
+    std::string get_recent_filename();
 
     void get_action();
 
