@@ -46,7 +46,7 @@ void RL_handler::load_model(const std::string &filename)
 {
     ROS_INFO("Loading model: %s", filename.c_str());
 
-    if(filename=="")
+    if (filename == "")
     {
         ROS_INFO("No model file specified, so skip loading");
         return;
@@ -72,8 +72,7 @@ void RL_handler::load_model(const std::string &filename)
             std::string token;
             std::getline(ss, token, ':');
             std::getline(ss, token);
-            //m_learning_rate = std::stod(token);
-            ROS_INFO("learning_rate: %f", std::stod(token));
+            m_learning_rate = std::stod(token);
             ROS_INFO("Learning rate: %f", m_learning_rate);
         }
         if (line.find("discount_factor: ") != std::string::npos)
@@ -82,7 +81,7 @@ void RL_handler::load_model(const std::string &filename)
             std::string token;
             std::getline(ss, token, ':');
             std::getline(ss, token);
-            //m_discount_factor = std::stod(token);
+            m_discount_factor = std::stod(token);
             ROS_INFO("Discount factor: %f", m_discount_factor);
         }
         if (line.find("epsilon: ") != std::string::npos)
@@ -91,7 +90,7 @@ void RL_handler::load_model(const std::string &filename)
             std::string token;
             std::getline(ss, token, ':');
             std::getline(ss, token);
-            //m_epsilon = std::stod(token);
+            m_epsilon = std::stod(token);
             ROS_INFO("Epsilon: %f", m_epsilon);
         }
     }
@@ -115,9 +114,47 @@ void RL_handler::save_model(const std::string &filename)
     //     std::ofstream file(model_path.c_str(), std::ios::out);
     // }
 
+    file << "---"
+         << "\n";
+
     file << "learning_rate: " << m_learning_rate << "\n";
     file << "discount_factor: " << m_discount_factor << "\n";
     file << "epsilon: " << m_epsilon << "\n";
+
+    file << "---"
+         << "\n";
+
+    file << "episode: (state: (reward, offset), action: (angular, linear)) "
+         << "\n";
+
+    for (auto &e : this->episode)
+    {
+        file << "state: (" << std::to_string(e.state.reward()) << ", " << std::to_string(e.state.trait().offset_discretization) << "), ";
+        file << "action: (" << std::to_string(e.action.trait().angular_discretization) << ", " << std::to_string(e.action.trait().linear_discretization) << ") "
+             << "\n";
+        //note: the type should explicitly be specified
+    }
+
+    file << "---"
+         << "\n";
+
+    file << "q_table: "
+         << "\n";
+
+    for (int8_t state_index = -6; state_index <= 6; state_index++)
+    {
+        for (int8_t angular_index = 0; angular_index <= 2; angular_index++)
+        {
+            for (int8_t linear_index = -2; linear_index <= 2; linear_index++)
+            {
+                file << policy.value(relearn::state(semantic_line_state{state_index}), relearn::action(driving_action{angular_index, linear_index})) << ", ";
+            }
+            file << "\n";
+        }
+        file << "\n";
+    }
+
+    file << "\n";
 
     file.close();
 }
@@ -135,15 +172,15 @@ std::string RL_handler::get_filename_by_cur_time()
 
 std::string RL_handler::get_recent_filename()
 {
+    //TODO: implement regex to verify the file name
     std::filesystem::create_directories(m_model_folder);
-    ROS_INFO("created");
     std::filesystem::path model_path = m_model_folder;
     std::vector<std::string> filenames;
     for (auto &p : std::filesystem::directory_iterator(model_path))
     {
         filenames.push_back(p.path().filename().string());
     }
-    if(filenames.empty())
+    if (filenames.empty())
     {
         ROS_INFO("No model found");
         return "";
@@ -153,7 +190,7 @@ std::string RL_handler::get_recent_filename()
     return filename;
 }
 
-void RL_handler::get_action() //epsilon greedy
+void RL_handler::get_action_epsilon() //epsilon greedy
 {
     std::uniform_real_distribution<double> rand_num(0.0, 1.0);
     if (rand_num(m_rand_gen) > m_epsilon)
@@ -172,7 +209,7 @@ void RL_handler::rand_action()
 
     action = rl_action(driving_action{angular, linear});
 
-    ROS_INFO("Random action: %d, %d", angular, linear);
+    ROS_INFO("Random action: %d, %d", action.trait().angular_discretization, action.trait().linear_discretization);
 }
 
 void RL_handler::best_action()
@@ -181,6 +218,7 @@ void RL_handler::best_action()
     if (action_ptr == nullptr)
     {
         ROS_INFO("No action found, switching to random action");
+        action = rl_action(driving_action{0, 0});
         rand_action();
         return;
     }
@@ -199,4 +237,12 @@ void RL_handler::learn()
 {
     ROS_INFO("Learning");
     learner(state, action, state_next, policy, false);
+
+    relearn::state state_t(state_next.reward(), semantic_line_state{state_next.trait().offset_discretization});
+    relearn::action action_t(driving_action{action.trait().angular_discretization, action.trait().linear_discretization});
+
+    episode.push_back({state_t, action_t});
+
+    ROS_INFO("Episode updated: %lf, %d, %d, %d", episode.back().state.reward(), episode.back().state.trait().offset_discretization, episode.back().action.trait().angular_discretization, action.trait().linear_discretization);
+    ROS_INFO("Episode size: %lu", episode.size());
 }

@@ -13,6 +13,9 @@
         "unordered_set": "cpp",
         "hash_map": "cpp",
         "hash_set": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "*.tcc": "cpp",
+        "functional": "cpp",
+        "iostream": "cpp"
     }
 }

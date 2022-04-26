@@ -151,7 +151,7 @@ void OnlineTraining::stop_wheel()
 void OnlineTraining::plan()
 {
     ROS_INFO("plan_q_learning");
-    m_rl_handler.get_action();
+    m_rl_handler.get_action_epsilon();
     set_action();
     ros::spinOnce();
     get_state_reward();
@@ -163,7 +163,6 @@ void OnlineTraining::plan()
 void OnlineTraining::state_callback(const reinforcement_learning_planner::state::ConstPtr &msg)
 {
     ROS_INFO("State offset: %d", msg->offset);
-    ROS_INFO("State velocity: %d", msg->special_case);
 }
 
 void OnlineTraining::reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg)
@@ -173,9 +172,9 @@ void OnlineTraining::reward_callback(const reinforcement_learning_planner::rewar
 
 void OnlineTraining::get_state_reward()
 {
-    using rl_state = relearn::state<semantic_line_state>;
-    ROS_INFO("Getting state");
-    m_rl_handler.state_next = rl_state(m_reward_msg.offset, {m_state_msg.offset, m_state_msg.special_case});
+    using state = RL_handler::rl_state;
+    m_rl_handler.state_next = state(m_reward_msg.offset, {m_state_msg.offset, m_state_msg.special_case});
+    ROS_INFO("got state: %lf, %d",m_rl_handler.state_next.reward(),m_rl_handler.state_next.trait().offset_discretization);
 }
 
 void OnlineTraining::set_action()
@@ -185,5 +184,5 @@ void OnlineTraining::set_action()
     m_action_msg.revert = false;
 
     m_pub_action.publish(m_action_msg);
-    ROS_INFO("Setting action:%d, %d", m_action_msg.linear_action, m_action_msg.angular_action);
+    ROS_INFO("Setting action:%d, %d", m_action_msg.angular_action, m_action_msg.linear_action);
 }

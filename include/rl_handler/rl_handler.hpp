@@ -16,10 +16,10 @@
 
 struct semantic_line_state
 {
-    int8_t offset_discretization;
+    int8_t offset_discretization;   // range: -6 ~ 6
     uint8_t special_case;
 
-    uint8_t state_size;
+    uint8_t state_size;             // state_size = 13
 
     bool operator==(const semantic_line_state &arg) const
     {
@@ -29,12 +29,12 @@ struct semantic_line_state
 
 struct driving_action
 {
-    int8_t angular_discretization;
-    int8_t linear_discretization;
+    int8_t angular_discretization;  // range: -2 ~ 2
+    int8_t linear_discretization;   // range: 0 ~ 2
     bool revert;
 
-    uint8_t angular_size;
-    uint8_t linear_size;
+    uint8_t angular_size;           // angular_size = 5
+    uint8_t linear_size;            // linear_size = 3
 
     bool operator==(const driving_action &arg) const
     {
@@ -43,8 +43,7 @@ struct driving_action
     }
 };
 
-//You should hash_combine first, then you could interate the member of the struct
-//also, operator== should be defined before hash_code, to know if two structs are equal
+//operator== should be defined before hash_code, to know if two structs are equal, or the program simply won't compile
 
 namespace std
 {
@@ -70,6 +69,10 @@ namespace std
         }
     };
 }
+
+//You should hash_combine first, then you could interate the member of the struct
+//TODO: Separate the template declaration and the definition
+
 
 class RL_handler
 {
@@ -110,7 +113,7 @@ public:
     std::string get_filename_by_cur_time();
     std::string get_recent_filename();
 
-    void get_action();
+    void get_action_epsilon();
 
     void rand_action();
     void best_action();
