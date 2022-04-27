@@ -62,6 +62,7 @@ void RL_handler::load_model(const std::string &filename)
         return;
     }
 
+    //load model parameters
     while (!file.eof())
     {
         std::string line;
@@ -72,7 +73,7 @@ void RL_handler::load_model(const std::string &filename)
             std::string token;
             std::getline(ss, token, ':');
             std::getline(ss, token);
-            m_learning_rate = std::stod(token);
+            m_learning_rate = std::stod(token); //std::stod actually ignores string space
             ROS_INFO("Learning rate: %f", m_learning_rate);
         }
         if (line.find("discount_factor: ") != std::string::npos)
@@ -94,6 +95,71 @@ void RL_handler::load_model(const std::string &filename)
             ROS_INFO("Epsilon: %f", m_epsilon);
         }
     }
+
+    //load q_table
+    while (!file.eof())
+    {
+        std::string line;
+        std::getline(file, line);
+        if (line.find("q_table:") != std::string::npos)
+        {
+            int8_t state_index = -6;
+            std::vector<std::vector<double>> action_vec;
+
+            while (!file.eof())
+            {
+                std::getline(file, line);
+
+                if (line.find("---") != std::string::npos)
+                    break;
+
+                std::vector<double> angular_row;
+
+                if (line[0] == '\n') //update q_table
+                {
+                    state = rl_state({state_index});
+                    for (size_t i = 0; i < action_vec.size(); i++)
+                    {
+                        for (size_t j = 0; j < angular_row.size(); j++)
+                        {
+                            action = rl_action(driving_action{int8_t(j - 2), int8_t(i)});
+                            policy.update(state, action, action_vec[i][j]);
+                        }
+                    }
+                    state_index++;
+                    action_vec.clear();
+                    continue;
+                }
+
+                std::stringstream ss(line);
+                std::string token;
+                while (std::getline(ss, token, ','))
+                {
+                    angular_row.push_back(std::stod(token));
+                }
+                action_vec.push_back(angular_row);
+            }
+            break;
+        }
+    }
+
+    //checking policy logging
+    ROS_INFO("Loaded q_table:");
+
+    for (int8_t state_index = -6; state_index <= 6; state_index++)
+    {
+        for (int8_t angular_index = 0; angular_index <= 2; angular_index++)
+        {
+            ROS_INFO("state: %d", state_index);
+            for (int8_t linear_index = -2; linear_index <= 2; linear_index++)
+            {
+                ROS_INFO("%s, ", std::to_string(policy.value(relearn::state(semantic_line_state{state_index}), relearn::action(driving_action{angular_index, linear_index}))).c_str());
+            }
+            ROS_INFO(" ");
+        }
+        ROS_INFO(" ");
+    }
+
     file.close();
 }
 
@@ -114,6 +180,7 @@ void RL_handler::save_model(const std::string &filename)
     //     std::ofstream file(model_path.c_str(), std::ios::out);
     // }
 
+    //save model parameter
     file << "---"
          << "\n";
 
@@ -127,12 +194,13 @@ void RL_handler::save_model(const std::string &filename)
     file << "episode: (state: (reward, offset), action: (angular, linear)) "
          << "\n";
 
+    //save episode
     for (auto &e : this->episode)
     {
         file << "state: (" << std::to_string(e.state.reward()) << ", " << std::to_string(e.state.trait().offset_discretization) << "), ";
         file << "action: (" << std::to_string(e.action.trait().angular_discretization) << ", " << std::to_string(e.action.trait().linear_discretization) << ") "
              << "\n";
-        //note: the type should explicitly be specified
+        //note: the type should explicitly be specified, since file output is binary by default
     }
 
     file << "---"
@@ -147,14 +215,14 @@ void RL_handler::save_model(const std::string &filename)
         {
             for (int8_t linear_index = -2; linear_index <= 2; linear_index++)
             {
-                file << policy.value(relearn::state(semantic_line_state{state_index}), relearn::action(driving_action{angular_index, linear_index})) << ", ";
+                file << std::to_string(policy.value(relearn::state(semantic_line_state{state_index}), relearn::action(driving_action{angular_index, linear_index}))) << ", ";
             }
             file << "\n";
         }
         file << "\n";
     }
 
-    file << "\n";
+    file << "---";
 
     file.close();
 }
@@ -238,10 +306,7 @@ void RL_handler::learn()
     ROS_INFO("Learning");
     learner(state, action, state_next, policy, false);
 
-    relearn::state state_t(state_next.reward(), semantic_line_state{state_next.trait().offset_discretization});
-    relearn::action action_t(driving_action{action.trait().angular_discretization, action.trait().linear_discretization});
-
-    episode.push_back({state_t, action_t});
+    episode.push_back({state, action});
 
     ROS_INFO("Episode updated: %lf, %d, %d, %d", episode.back().state.reward(), episode.back().state.trait().offset_discretization, episode.back().action.trait().angular_discretization, action.trait().linear_discretization);
     ROS_INFO("Episode size: %lu", episode.size());
