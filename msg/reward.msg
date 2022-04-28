@@ -1,4 +1,4 @@
 Header header
 
-int8 offset
+float64 offset
 bool out_of_line

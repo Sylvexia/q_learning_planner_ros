@@ -8,8 +8,8 @@ RL_handler::RL_handler()
       m_state{0, 0, 13},
       m_action{0, 0, 0, 5, 3},
       m_model_folder("rl_model/online"),
-      state(0, m_state),
-      state_next(0, m_state),
+      state(0.0, m_state),
+      state_next(0.0, m_state),
       action{m_action},
       policy(),
       episode(),
@@ -97,6 +97,7 @@ void RL_handler::load_model(const std::string &filename)
     }
 
     //load q_table
+    //TODO: Making it less boilerplate
     while (!file.eof())
     {
         std::string line;
@@ -144,7 +145,7 @@ void RL_handler::load_model(const std::string &filename)
     }
 
     //checking policy logging
-    ROS_INFO("Loaded q_table:");
+    ROS_INFO("Q_table checking:");
 
     for (int8_t state_index = -6; state_index <= 6; state_index++)
     {
@@ -159,6 +160,7 @@ void RL_handler::load_model(const std::string &filename)
         }
         ROS_INFO(" ");
     }
+    ROS_INFO("End of Q_table checking");
 
     file.close();
 }
@@ -295,10 +297,17 @@ void RL_handler::best_action()
     action = *(action_ptr);
 }
 
+void RL_handler::set_next_state(double reward, semantic_line_state &next_state)
+{
+    state_next = rl_state(reward, next_state);
+
+    ROS_INFO("got state: %f, %d", state_next.reward(), state_next.trait().offset_discretization);
+}
+
 void RL_handler::update_state()
 {
     ROS_INFO("Update state");
-    state_next = state;
+    state = state_next;
 }
 
 void RL_handler::learn()
@@ -308,6 +317,6 @@ void RL_handler::learn()
 
     episode.push_back({state, action});
 
-    ROS_INFO("Episode updated: %lf, %d, %d, %d", episode.back().state.reward(), episode.back().state.trait().offset_discretization, episode.back().action.trait().angular_discretization, action.trait().linear_discretization);
+    ROS_INFO("Episode updated: %f, %d, %d, %d", episode.back().state.reward(), episode.back().state.trait().offset_discretization, episode.back().action.trait().angular_discretization, action.trait().linear_discretization);
     ROS_INFO("Episode size: %lu", episode.size());
 }

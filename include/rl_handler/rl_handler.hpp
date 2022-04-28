@@ -118,6 +118,7 @@ public:
     void rand_action();
     void best_action();
 
+    void set_next_state(double reward,semantic_line_state &state_next);
     void update_state();
 
     void learn();

@@ -112,7 +112,7 @@ void OnlineTraining::execute()
     ros::Rate execute_rate(2);
     while (true)
     {
-        ros::spinOnce();
+        //ros::spinOnce();
         plan();
         execute_rate.sleep();
         bool is_executing = true;
@@ -160,21 +160,20 @@ void OnlineTraining::plan()
     m_rl_handler.update_state();
 }
 
-void OnlineTraining::state_callback(const reinforcement_learning_planner::state::ConstPtr &msg)
+void OnlineTraining::state_callback(const reinforcement_learning_planner::state &msg)
 {
-    ROS_INFO("State offset: %d", msg->offset);
+    m_state_msg = msg;
 }
 
-void OnlineTraining::reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg)
+void OnlineTraining::reward_callback(const reinforcement_learning_planner::reward &msg)
 {
-    ROS_INFO("Reward offset: %d", msg->offset);
+    m_reward_msg = msg;
 }
 
 void OnlineTraining::get_state_reward()
 {
-    using state = RL_handler::rl_state;
-    m_rl_handler.state_next = state(m_reward_msg.offset, {m_state_msg.offset, m_state_msg.special_case});
-    ROS_INFO("got state: %lf, %d",m_rl_handler.state_next.reward(),m_rl_handler.state_next.trait().offset_discretization);
+    semantic_line_state next_state = {m_state_msg.offset};
+    m_rl_handler.set_next_state(m_reward_msg.offset, next_state);
 }
 
 void OnlineTraining::set_action()

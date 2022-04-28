@@ -46,8 +46,8 @@ private:
     RL_handler m_rl_handler;
     PlannerState m_planner_state;
 
-    void state_callback(const reinforcement_learning_planner::state::ConstPtr &msg);
-    void reward_callback(const reinforcement_learning_planner::reward::ConstPtr &msg);
+    void state_callback(const reinforcement_learning_planner::state &msg);
+    void reward_callback(const reinforcement_learning_planner::reward &msg);
 
     bool m_exit;
 };
