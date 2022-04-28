@@ -23,8 +23,8 @@ OnlineTraining::~OnlineTraining()
 
 void OnlineTraining::init()
 {
-    m_rl_handler.load_model(m_rl_handler.get_recent_filename());
     m_rl_handler.init();
+    m_rl_handler.load_model(m_rl_handler.get_recent_filename());
 }
 
 void OnlineTraining::start()
