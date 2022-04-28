@@ -94,51 +94,56 @@ void RL_handler::load_model(const std::string &filename)
             m_epsilon = std::stod(token);
             ROS_INFO("Epsilon: %f", m_epsilon);
         }
-    }
-
-    //load q_table
-    //TODO: Making it less boilerplate
-    while (!file.eof())
-    {
-        std::string line;
-        std::getline(file, line);
         if (line.find("q_table:") != std::string::npos)
         {
             int8_t state_index = -6;
             std::vector<std::vector<double>> action_vec;
+            std::vector<double> angular_row;
 
             while (!file.eof())
             {
                 std::getline(file, line);
+                ROS_INFO("file line: %s", line.c_str());
 
                 if (line.find("---") != std::string::npos)
                     break;
 
-                std::vector<double> angular_row;
-
-                if (line[0] == '\n') //update q_table
+                if (line == "") //update q_table
                 {
-                    state = rl_state({state_index});
-                    for (size_t i = 0; i < action_vec.size(); i++)
+                    auto state_temp = rl_state(semantic_line_state{state_index});
+                    ROS_INFO("state index:%d", state_index);
+                    for (size_t i = 0; i < 3; i++) //size: 3, linear: 0 ~ 2
                     {
-                        for (size_t j = 0; j < angular_row.size(); j++)
+                        for (size_t j = 0; j < 5; j++) //size: 5, angular: -2 ~ 2
                         {
-                            action = rl_action(driving_action{int8_t(j - 2), int8_t(i)});
-                            policy.update(state, action, action_vec[i][j]);
+                            auto action_temp = rl_action(driving_action{int8_t(int(j) - 2), int8_t(i)});
+                            policy.update(state_temp, action_temp, action_vec[i][j]);
                         }
+                        ROS_INFO("action element: %f, %f, %f, %f, %f", action_vec[i][0], action_vec[i][1],
+                                 action_vec[i][2], action_vec[i][3], action_vec[i][4]);
                     }
                     state_index++;
+                    angular_row.clear();
                     action_vec.clear();
                     continue;
                 }
 
                 std::stringstream ss(line);
                 std::string token;
-                while (std::getline(ss, token, ','))
+                while (std::getline(ss, token, ',') && token != " ")
                 {
                     angular_row.push_back(std::stod(token));
                 }
                 action_vec.push_back(angular_row);
+                angular_row.clear();
+
+                // for(auto &inner_vec : action_vec)
+                // {
+                //     for(auto &element : inner_vec)
+                //     {
+                //         ROS_INFO("element: %f", element);
+                //     }
+                // }
             }
             break;
         }
@@ -149,10 +154,10 @@ void RL_handler::load_model(const std::string &filename)
 
     for (int8_t state_index = -6; state_index <= 6; state_index++)
     {
-        for (int8_t angular_index = 0; angular_index <= 2; angular_index++)
+        for (int8_t linear_index = 0; linear_index <= 2; linear_index++)
         {
             ROS_INFO("state: %d", state_index);
-            for (int8_t linear_index = -2; linear_index <= 2; linear_index++)
+            for (int8_t angular_index = -2; angular_index <= 2; angular_index++)
             {
                 ROS_INFO("%s, ", std::to_string(policy.value(relearn::state(semantic_line_state{state_index}), relearn::action(driving_action{angular_index, linear_index}))).c_str());
             }
@@ -213,9 +218,9 @@ void RL_handler::save_model(const std::string &filename)
 
     for (int8_t state_index = -6; state_index <= 6; state_index++)
     {
-        for (int8_t angular_index = 0; angular_index <= 2; angular_index++)
+        for (int8_t linear_index = 0; linear_index <= 2; linear_index++)
         {
-            for (int8_t linear_index = -2; linear_index <= 2; linear_index++)
+            for (int8_t angular_index = -2; angular_index <= 2; angular_index++)
             {
                 file << std::to_string(policy.value(relearn::state(semantic_line_state{state_index}), relearn::action(driving_action{angular_index, linear_index}))) << ", ";
             }
