@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-        std::uniform_int_distribution<int> state_rand(-6, 6);
+        std::uniform_int_distribution<int> state_rand(-3, 3);
         std::uniform_real_distribution<double> reward_rand(-2.0, 2.0);
 
         state_msg.offset = state_rand(rand_gen);

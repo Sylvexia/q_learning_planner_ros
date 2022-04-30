@@ -109,12 +109,14 @@ void OnlineTraining::suspend()
 
 void OnlineTraining::execute()
 {
-    ros::Rate execute_rate(2);
+    //initialize first state
+    ros::spinOnce();
+    semantic_line_state state_trait = {m_state_msg.offset};
+    m_rl_handler.set_state(m_reward_msg.offset, state_trait);
+
     while (true)
     {
-        //ros::spinOnce();
         plan();
-        execute_rate.sleep();
         bool is_executing = true;
 
         if (kbhit())
@@ -150,9 +152,13 @@ void OnlineTraining::stop_wheel()
 
 void OnlineTraining::plan()
 {
+    ros::Rate time_step(2);
     ROS_INFO("plan_q_learning");
+
     m_rl_handler.get_action_epsilon();
+
     set_action();
+    time_step.sleep(); //giving some time to react and observe the state/reward
     ros::spinOnce();
     get_state_reward();
 

@@ -5,7 +5,7 @@ RL_handler::RL_handler()
       m_learning_rate(0.9),
       m_discount_factor(0.1),
       m_epsilon(0.1),
-      m_state{0, 0, 13},
+      m_state{0, 0, 7},
       m_action{0, 0, 0, 5, 3},
       m_model_folder("rl_model/online"),
       state(0.0, m_state),
@@ -48,7 +48,7 @@ void RL_handler::load_model(const std::string &filename)
 
     if (filename == "")
     {
-        ROS_INFO("No model file specified, so skip loading");
+        ROS_WARN("No model file specified, so skip loading");
         return;
     }
 
@@ -96,7 +96,7 @@ void RL_handler::load_model(const std::string &filename)
         }
         if (line.find("q_table:") != std::string::npos)
         {
-            int8_t state_index = -6;
+            int8_t state_index = -3;
             std::vector<std::vector<double>> action_vec;
             std::vector<double> angular_row;
 
@@ -152,7 +152,7 @@ void RL_handler::load_model(const std::string &filename)
     //checking policy logging
     ROS_INFO("Q_table checking:");
 
-    for (int8_t state_index = -6; state_index <= 6; state_index++)
+    for (int8_t state_index = -3; state_index <= 3; state_index++)
     {
         for (int8_t linear_index = 0; linear_index <= 2; linear_index++)
         {
@@ -216,7 +216,7 @@ void RL_handler::save_model(const std::string &filename)
     file << "q_table: "
          << "\n";
 
-    for (int8_t state_index = -6; state_index <= 6; state_index++)
+    for (int8_t state_index = -3; state_index <= 3; state_index++)
     {
         for (int8_t linear_index = 0; linear_index <= 2; linear_index++)
         {
@@ -302,11 +302,16 @@ void RL_handler::best_action()
     action = *(action_ptr);
 }
 
+void RL_handler::set_state(double reward, semantic_line_state &state_trait)
+{
+    state = relearn::state(reward, state_trait);
+    ROS_INFO("got state: %f, %d", state.reward(), state.trait().offset_discretization);
+}
+
 void RL_handler::set_next_state(double reward, semantic_line_state &next_state)
 {
     state_next = rl_state(reward, next_state);
-
-    ROS_INFO("got state: %f, %d", state_next.reward(), state_next.trait().offset_discretization);
+    ROS_INFO("got next state: %f, %d", state_next.reward(), state_next.trait().offset_discretization);
 }
 
 void RL_handler::update_state()
